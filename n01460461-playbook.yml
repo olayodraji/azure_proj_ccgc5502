@@ -1,0 +1,12 @@
+---
+- name: n01460461 Playbook
+  hosts: all
+  become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  roles:
+    - webserver-n01460461
+    - user-n01460461
+    - profile-n01460461
+    - datadisk-n01460461

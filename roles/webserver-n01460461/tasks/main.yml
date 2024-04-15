@@ -1,0 +1,33 @@
+---
+- name: Install Apache web server
+  package:
+    name: "{{ webserver_service }}"
+    state: present
+
+- name: Create website files on automation server
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ item.name }}"
+  with_items: "{{ website_files }}"
+
+- name: Copy website files to nodes
+  copy:
+    src: "{{ item.name }}"
+    dest: "{{ website_dir }}/index.html"
+  with_items: "{{ website_files }}"
+
+- name: Set permissions on website files
+  file:
+    path: "{{ website_dir }}/index.html"
+    mode: "0444"
+
+- name: Start Apache web server
+  service:
+    name: "{{ webserver_service }}"
+    state: "{{ webserver_service_state }}"
+  notify: restart apache
+
+- name: Ensure Apache web service is enabled at boot
+  service:
+    name: "{{ webserver_service }}"
+    enabled: "{{ webserver_service_enabled }}"

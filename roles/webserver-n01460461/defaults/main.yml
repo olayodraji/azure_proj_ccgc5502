@@ -1,0 +1,14 @@
+---
+website_files:
+  - name: vm1.html
+    content: "FQDN of vm1"
+  - name: vm2.html
+    content: "FQDN of vm2"
+  - name: vm3.html
+    content: "FQDN of vm3"
+
+webserver_service: apache2
+webserver_service_state: started
+webserver_service_enabled: yes
+
+website_dir: /var/www/html

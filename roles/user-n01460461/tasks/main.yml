@@ -1,0 +1,35 @@
+---
+- name: Add group cloudadmins
+  group:
+    name: "{{ group_name }}"
+    state: present
+
+- name: Add user accounts
+  user:
+    name: "{{ item.name }}"
+    groups: "{{ group_name }},wheel"
+    state: present
+  with_items: "{{ user_accounts }}"
+
+- name: Generate SSH keys for users
+  authorized_key:
+    user: "{{ item.name }}"
+    state: present
+    key: "{{ lookup('file', ssh_key_dir + '/id_rsa.pub') }}"
+  with_items: "{{ user_accounts }}"
+  when: ansible_os_family == 'Linux'
+
+- name: Ensure SSH directory exists for users
+  file:
+    path: "{{ ssh_key_dir }}"
+    state: directory
+    mode: '0700'
+  with_items: "{{ user_accounts }}"
+  when: ansible_os_family == 'Linux'
+
+- name: Distribute SSH keys for users
+  authorized_key:
+    user: "{{ item.name }}"
+    state: present
+    key: "{{ lookup('file', ssh_key_dir + '/id_rsa.pub') }}"
+  with_items: "{{ user_accounts }}"

@@ -1,0 +1,8 @@
+---
+user_accounts:
+  - name: user100
+  - name: user200
+  - name: user300
+
+group_name: cloudadmins
+ssh_key_dir: /home/{{ item.name }}/.ssh

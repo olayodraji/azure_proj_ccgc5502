@@ -1,0 +1,8 @@
+---
+- name: Append lines to /etc/profile
+  blockinfile:
+    path: /etc/profile
+    block: |
+      # Test block added by Ansible
+      # Ola Raji
+      export TMOUT=1500

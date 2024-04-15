@@ -1,0 +1,106 @@
+---
+- name: Partition disk
+  parted:
+    device: "/dev/{{ disk }}"
+    number: 1
+    state: present
+    part_end: "{{ part1_size_gb }}GB"
+
+- name: Format partition 1 as XFS
+  filesystem:
+    fstype: "{{ part1_fs_type }}"
+    dev: "/dev/{{ disk }}1"
+
+- name: Mount partition 1
+  mount:
+    path: "{{ mount_point_part1 }}"
+    src: "/dev/{{ disk }}1"
+    fstype: "{{ part1_fs_type }}"
+    state: mounted
+
+- name: Partition disk
+  parted:
+    device: "/dev/{{ disk }}"
+    number: 2
+    state: present
+    part_start: "{{ part1_size_gb }}GB"
+    part_end: "{{ disk_size_gb }}GB"
+
+- name: Format partition 2 as EXT4
+  filesystem:
+    fstype: "{{ part2_fs_type }}"
+    dev: "/dev/{{ disk }}2"
+
+- name: Mount partition 2
+  mount:
+    path: "{{ mount_point_part2 }}"
+    src: "/dev/{{ disk }}2"
+    fstype: "{{ part2_fs_type }}"
+    state: mounted
+
+    # tasks/main.yml
+
+- name: Validate disk size
+  fail:
+    msg: "Disk size must be greater than the sum of part1 and part2 sizes"
+  when: disk_size_gb <= part1_size_gb + part2_size_gb
+
+- name: Validate partition sizes
+  fail:
+    msg: "Partition sizes must not exceed disk size"
+  when: part1_size_gb + part2_size_gb > disk_size_gb
+
+
+# tasks/main.yml
+
+- name: Partition disk
+  parted:
+    device: "/dev/{{ disk }}"
+    number: 1
+    state: present
+    part_end: "{{ part1_size_gb }}GB"
+  ignore_errors: yes
+
+- name: Fail if partitioning disk fails
+  fail:
+    msg: "Failed to partition disk"
+  when: not ansible_devices[disk].partitions
+
+
+# tasks/main.yml
+
+- name: Label the disk
+  filesystem:
+    dev: "/dev/{{ disk }}"
+    label: "data_disk"
+  when: not ansible_devices[disk].partitions
+
+- name: Unmount existing partitions
+  mount:
+    path: "{{ item.mount }}"
+    state: unmounted
+  loop: "{{ ansible_mounts }}"
+  when: item.device.startswith('/dev/{{ disk }}')
+  ignore_errors: yes
+
+- name: Delete existing partitions
+  parted:
+    device: "/dev/{{ disk }}"
+    number: "{{ item }}"
+    state: absent
+  loop: "{{ ansible_devices[disk].partitions }}"
+  ignore_errors: yes
+
+
+# tasks/main.yml
+
+- name: Resize partition if disk size changes
+  parted:
+    device: "/dev/{{ disk }}"
+    number: "{{ item.num }}"
+    part_end: "{{ item.end }}"
+  loop:
+    - { num: 1, end: "{{ part1_size_gb }}GB" }
+    - { num: 2, end: "{{ disk_size_gb }}GB" }
+  when: item.num == 1 and item.end != ansible_devices[disk].partitions[0].size or
+        item.num == 2 and item.end != ansible_devices[disk].partitions[1].size

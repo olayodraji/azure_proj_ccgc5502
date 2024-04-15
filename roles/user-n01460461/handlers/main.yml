@@ -1,0 +1,6 @@
+---
+- name: Reload profile
+  command: source /etc/profile
+  async: 0
+  poll: 0
+  ignore_errors: true
